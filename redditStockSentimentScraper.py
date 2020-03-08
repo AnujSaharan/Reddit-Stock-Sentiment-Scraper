@@ -304,7 +304,7 @@ if __name__ == "__main__":
     # ----------------------- Top 4 Stocks to track and plot using matplotlib -----------------------
 
     # ----------------------- Initialize matplotplib -----------------------
-    print(type(plot_flag))
+
     if plot_flag is True:
         stock_sentiment_plot, plot_axes = pyplot.subplots(
             nrows=2, ncols=2)  # Initialize a 2x2 mega-plot to track up to 4 stocks at once

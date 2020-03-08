@@ -4,11 +4,19 @@
 
 ## Instructions to Run
 
-Default Parameters:
-python redditStockSentimentScraper.py
+#### With Default Parameters
 
-Variable Parameters:
-python redditStockSentimentScraper.py [ Name of Subreddit to scrape comments from ] [ Sort Mode for Subreddit ] [ Number of Posts on the Subreddit to look at ] [ Update Frequency ] [ Boolean to enable or disable PyPlot ]
+```python redditStockSentimentScraper.py```
+
+__Default Subreddit:__ r/wallstreetbets
+__Default Subreddit Sort:__ new
+__Default Number of Posts to Scrape:__ 30
+__Default Update Frequency:__ 3 minutes
+__Default Plot Mode:__ Enabled
+
+#### With Custom Parameters
+
+```python redditStockSentimentScraper.py [ Name of Subreddit to scrape comments from ] [ Sort Mode for Subreddit ] [ Number of Posts on the Subreddit to look at ] [ Update Frequency ] [ Boolean to enable or disable PyPlot ]```
 
 ## Contents for environment_variables.json
 

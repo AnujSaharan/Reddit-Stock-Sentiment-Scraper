@@ -1,13 +1,9 @@
 # Reddit Stock Sentiment Scraper
-# USAGE: wsbtickerbot.py [ Name of Subreddit to scrape comments from ] [ Sort Mode for Subreddit ] [ Number of Posts on the Subreddit to look at ] [ Update Frequency ] [ Boolean to enable or disable PyPlot ]
+# USAGE: wsbtickerbot.py [ Name of Subreddit to scrape comments from ] [ Sort Mode for Subreddit ] [ Number of Posts on the Subreddit to look at ] [ Update Frequency ]
 
 # Utilizes a modified version of the VADER Sentiment Analysis
 # Library to classify Reddit comments from r/WallStreetBets and
 # generate aggregate statistics
-
-# Anuj Saharan
-# Georgia Institute of Technology
-# February 19, 2020
 
 from vaderSentiment.vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import re
@@ -18,7 +14,6 @@ import json
 import pprint
 import operator
 import datetime
-import matplotlib.pyplot as pyplot
 
 from praw.models import MoreComments
 sys.path.insert(0, 'vaderSentiment/vaderSentiment')
@@ -127,7 +122,7 @@ def initialize_subreddit(current_subreddit):
     return current_subreddit
 
 
-def scrape_and_analyze_sentiment(current_subreddit, subreddit_sort_mode, post_count, plot_flag):
+def scrape_and_analyze_sentiment(current_subreddit, subreddit_sort_mode, post_count):
     ticker_dict = {}
     text = ""
 
@@ -179,7 +174,7 @@ def scrape_and_analyze_sentiment(current_subreddit, subreddit_sort_mode, post_co
     ticker_list = sorted(
         ticker_list, key=operator.attrgetter("count"), reverse=True)
     for ticker in ticker_list:
-        Ticker.analyze_sentiment(ticker, plot_flag)
+        Ticker.analyze_sentiment(ticker)
 
     # will break as soon as it hits a ticker with fewer than 5 mentions
     for count, ticker in enumerate(ticker_list):
@@ -206,7 +201,7 @@ class Ticker:
         self.neutral = 0
         self.sentiment = 0  # 0 is neutral
 
-    def analyze_sentiment(self, plot_flag):
+    def analyze_sentiment(self):
         analyzer = SentimentIntensityAnalyzer()
         neutral_count = 0
         for text in self.bodies:
@@ -221,35 +216,6 @@ class Ticker:
         self.bullish = int(self.pos_count / len(self.bodies) * 100)
         self.bearish = int(self.neg_count / len(self.bodies) * 100)
         self.neutral = int(neutral_count / len(self.bodies) * 100)
-
-        if plot_flag is True:
-            self.plot_sentiment()
-
-    def plot_sentiment(self):
-        if self.ticker == 'GLD':
-            stock_two_bull_meter.append(self.bullish)
-            stock_two_timestamp.append(datetime.datetime.now())
-        plot_axes[0, 0].plot(stock_two_timestamp, stock_two_bull_meter)
-        stock_sentiment_plot.autofmt_xdate()
-
-        if self.ticker == 'SPY':
-            stock_one_bull_meter.append(self.bullish)
-            stock_one_timestamp.append(datetime.datetime.now())
-        plot_axes[0, 1].plot(stock_one_timestamp, stock_one_bull_meter)
-        stock_sentiment_plot.autofmt_xdate()
-
-        if self.ticker == 'SPCE':
-            stock_four_bull_meter.append(self.bullish)
-            stock_four_timestamp.append(datetime.datetime.now())
-        plot_axes[1, 0].plot(stock_four_timestamp, stock_four_bull_meter)
-        stock_sentiment_plot.autofmt_xdate()
-
-        if self.ticker == 'AMD':
-            stock_three_bull_meter.append(self.bullish)
-            stock_three_timestamp.append(datetime.datetime.now())
-        plot_axes[1, 1].plot(stock_three_timestamp, stock_three_bull_meter)
-        stock_sentiment_plot.autofmt_xdate()
-
 
         # Entry point for the program
 if __name__ == "__main__":
@@ -276,52 +242,12 @@ if __name__ == "__main__":
     if len(sys.argv) > 4:
         update_frequency = int(sys.argv[4])
 
-    # Flag to enable or disable plots
-    plot_flag = True  # Default to displaying the plot
-    if len(sys.argv) > 5:
-        plot_flag = sys.argv[5].lower() == 'true'
     # ----------------------- Subreddit Parameters -----------------------
-
-    # ----------------------- Top 4 Stocks to track and plot using matplotlib -----------------------
-    # TODO: Make a class to hold bullish sentiment, bearish sentiment, and number of occurences of a symbol
-    # TODO: Put this data in an array of a class
-    if plot_flag is True:
-        stock_one_symbol = "GLD"
-        stock_one_bull_meter = []
-        stock_one_timestamp = []
-
-        stock_two_symbol = "SPY"
-        stock_two_bull_meter = []
-        stock_two_timestamp = []
-
-        stock_three_symbol = "SPCE"
-        stock_three_bull_meter = []
-        stock_three_timestamp = []
-
-        stock_four_symbol = "AMD"
-        stock_four_bull_meter = []
-        stock_four_timestamp = []
-    # ----------------------- Top 4 Stocks to track and plot using matplotlib -----------------------
-
-    # ----------------------- Initialize matplotplib -----------------------
-
-    if plot_flag is True:
-        stock_sentiment_plot, plot_axes = pyplot.subplots(
-            nrows=2, ncols=2)  # Initialize a 2x2 mega-plot to track up to 4 stocks at once
-        plot_axes[0, 0].set_title(stock_one_symbol)  # Plot 1
-        plot_axes[0, 1].set_title(stock_two_symbol)  # Plot 2
-        plot_axes[1, 0].set_title(stock_three_symbol)  # Plot 3
-        plot_axes[1, 1].set_title(stock_four_symbol)  # Plot 4
-        stock_sentiment_plot.tight_layout()  # Format the window to size itself correctly
-        stock_sentiment_plot.canvas.set_window_title(
-            'Bullish Sentiment on r/{0}'.format(current_subreddit))
-        # ----------------------- Initialize matplotlib -----------------------
 
     # ----------------------- Print information to Terminal -----------------------
     print("\nSubreddit: r/{0}".format(current_subreddit))
     print("Subreddit Sort Mode: '{0}'".format(subreddit_sort_mode))
     print("Scraping {0} most recent posts".format(post_count))
-    print("Plot Enabled: {0}".format(plot_flag))
     print("Running analysis with a {0} second timeout between iterations\n".format(
         update_frequency))
     # ----------------------- Print information to Terminal -----------------------
@@ -333,11 +259,9 @@ if __name__ == "__main__":
 
         # Start scraping comments, extract asset symbols and analyze people's sentiment on them
         scrape_and_analyze_sentiment(
-            current_subreddit, subreddit_sort_mode, post_count, plot_flag)
+            current_subreddit, subreddit_sort_mode, post_count)
 
         print("Iteration {0} finished successfully at {1}.\n".format(
             current_iteration, datetime.datetime.now()))
         current_iteration += 1  # Update iteration count
-        if plot_flag is True:
-            pyplot.pause(update_frequency)  # Update the plot
     # ----------------------- Main Loop -----------------------

@@ -57,7 +57,7 @@ def parse_section(ticker_dict, body):
         "SEP", "SEPT", "OCT", "NOV", "DEC", "FDA", "IV", "ER", "IPO", "RISE", "MORE", "BUYS", "JERK", "HUGE", "BURN", "SAME", "OCD", "HOW", "CDC", "KNOW", "DAY", "GAY", "SAFE", "WILL", "GET",
         "IPA", "URL", "MILF", "BUT", "SSN", "FIFA", "USD", "CPU", "AT", "ABC", "TRADE", "BBC", "NSA", "WWII", "TLDR", "PSA", "LOST", "DONT", "JUST", "OVER", "BACK", "YET", "FIX", "TOP", "TEN",
         "GG", "ELON", "ROPE", "GUH", "HOLY", "GAP", "GANG", "LONG", "INTO", "MOON", "THE", "HIV", "BULL", "BEAR", "YTD", "DIP", "BUY", "TURN", "LEAP", "FYI", "SARS", "CRAP", "EOW", "EASY", "AMA",
-        "FDIC", "UFC", "LETS", "PUMP", "FAKE", "WHY", "TICKER", "TICKERS", "WUUU", "ESPN", "WON", "COCK", "YUGE", "ONLY", "FALL", "GSI", "ONE", "BABY", "BIG", "FAT", "GIVE", "FED", "WILL", "NEW"
+        "FDIC", "UFC", "LETS", "PUMP", "FAKE", "WHY", "TICKER", "TICKERS", "WUUU", "ESPN", "WON", "COCK", "YUGE", "ONLY", "FALL", "GSI", "ONE", "BABY", "BIG", "FAT", "GIVE", "FED", "WILL", "NEW", "PUTS", "EPS", "REK"
     ]
 
     if '$' in body:

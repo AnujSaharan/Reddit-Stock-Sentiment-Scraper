@@ -1,3 +1,4 @@
 .vscode/
 environment_variables.json
+Stock_Sentiment_Data.json
 __pycache__/

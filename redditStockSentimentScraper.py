@@ -18,16 +18,6 @@ import datetime
 from praw.models import MoreComments
 sys.path.insert(0, 'vaderSentiment/vaderSentiment')
 
-
-def get_url(key, value, total_count):
-    mention = ("mentions", "mention")[value == 1]
-    if int(value / total_count * 100) == 0:
-        perc_mentions = "<1"
-    else:
-        perc_mentions = int(value / total_count * 100)
-    return "{0}:    {3}% {1}".format(key, value, mention, perc_mentions)
-
-
 # Main Method
 def main():
     print("\nReddit Stock Sentiment Scraper v1.1")
@@ -39,12 +29,12 @@ def main():
         current_subreddit = str(sys.argv[1])
 
     # New - Scrape most recent posts first, Hot - Sort 'hottest' post on the subreddit
-    subreddit_sort_mode = "new"  # Default to sort by 'new'
+    subreddit_sort_mode = "hot"  # Default to sort by 'new'
     if len(sys.argv) > 2:
         subreddit_sort_mode = str(sys.argv[2])
 
     # Total number of posts to scrape
-    post_count = 30  # Default to 30 posts
+    post_count = 1  # Default to 30 posts
     if len(sys.argv) > 3:
         post_count = int(sys.argv[3])
 
@@ -79,7 +69,7 @@ def main():
 def scrape_and_analyze_sentiment(current_subreddit, subreddit_sort_mode, post_count):
     stock_symbol_dictionary = {}
     return_string = ""
-
+    
     current_subreddit = initialize_subreddit(current_subreddit)
 
     # Recieve posts from the subreddit in order determined by the 'hot' mode
@@ -93,32 +83,32 @@ def scrape_and_analyze_sentiment(current_subreddit, subreddit_sort_mode, post_co
     for count, post in enumerate(incoming_posts):
         # Sort comments on the post by recency
         post.comment_sort = 'new'
-
         if not post.clicked:  # If the post has not been opened yet
             # Scrape stock mentions from post titles
+            
             stock_symbol_dictionary = build_stock_symbol_dictionary_from_body(stock_symbol_dictionary, post.title)
-
+            
             # Search through all comments and replies to comments
             comment_count = 0
             comments = post.comments
             # comments.replace_more(limit=None)
-
+            
             for comment in comments.list():
                 comment_count += 1
-                # To get around the AttributeError thrown by the "load more comments" option
+            
+                # To get around the AttributeError thrown by the "Load More Comments" option
                 if isinstance(comment, MoreComments):
                     continue
-
+                
                 stock_symbol_dictionary = build_stock_symbol_dictionary_from_body(
                     stock_symbol_dictionary, comment.body)
-
+            
                 # Iterate through the comment's replies
                 replies = comment.replies
                 for reply in replies:
-                    # To get around the AttributeError thrown by the "load more comments" option
+                    # To get around the AttributeError thrown by the "Load More Comments" option
                     if isinstance(reply, MoreComments):
                         continue
-                    
                     stock_symbol_dictionary = build_stock_symbol_dictionary_from_body(
                         stock_symbol_dictionary, reply.body)
             
@@ -127,29 +117,36 @@ def scrape_and_analyze_sentiment(current_subreddit, subreddit_sort_mode, post_co
 
     return_string += "\n\nSymbol | Mentions | Bullish | Bearish | Neutral"
 
-    total_mentions = 0
-    ticker_list = []
+    total_stocks_found = 0
+    stock_list = []
     for key in stock_symbol_dictionary:
-        total_mentions += stock_symbol_dictionary[key].total_mentions
-        ticker_list.append(stock_symbol_dictionary[key])
+        # Total stocks found is the sum of all individual stock mentions
+        total_stocks_found += stock_symbol_dictionary[key].total_mentions
+        stock_list.append(stock_symbol_dictionary[key])
 
-    ticker_list = sorted(
-        ticker_list, key=operator.attrgetter("total_mentions"), reverse=True)
-    for ticker in ticker_list:
-        Asset_Data.analyze_sentiment(ticker)
+    # Sort stock_list from most mentions to least mentions
+    stock_list = sorted(
+        stock_list, key=operator.attrgetter("total_mentions"), reverse=True)
+    
+    # Analyze sentiment for each stock in the list
+    for stock in stock_list:
+        Asset_Data.analyze_sentiment(stock)
 
-    # will break as soon as it hits a ticker with fewer than 5 mentions
-    for count, ticker in enumerate(ticker_list):
+    # Dump results to a JSON file
+    json_string = json.dumps(stock_list, default=object_dictionary, indent=4)
+    with open('stock_sentiment_data.json', 'a+') as file_pointer:
+        file_pointer.write(json_string)
+
+    # Breaks if any stock has fewer than 5 mentions in the incoming data stream
+    for count, stock in enumerate(stock_list):
         if count == 25:
             break
 
-        url = get_url(ticker.symbol, ticker.total_mentions, total_mentions)
+        url = get_url(stock.symbol, stock.total_mentions, total_stocks_found)
         # setting up formatting for table
         return_string += "\n{} | {} | {} | {}".format(url,
-                                             ticker.bullish, ticker.bearish, ticker.neutral)
-
+                                             stock.bullish, stock.bearish, stock.neutral)
     print(return_string)
-
 
 def initialize_subreddit(current_subreddit):
     if current_subreddit == "":  # Default to r/wallstreetbets if no argument given
@@ -182,7 +179,7 @@ def initialize_subreddit(current_subreddit):
 def build_stock_symbol_dictionary_from_body(stock_symbol_dictionary, body):
     # List to take care of most common false negatives
     blacklisted_word_list = [
-        "YOLO", "TOS", "CEO", "CFO", "CTO", "DD", "BTFD", "WSB", "OK", "RH", "FTW", "WELS", "KNO", "FOR", "REIT", "NOW", "MODS", "HELP", "HIM", "TELL", "DLDO", "ETF", "EOY", "DCA", "TSP",
+        "YOLO", "TOS", "CEO", "CFO", "CTO", "DD", "BTFD", "WSB", "OK", "RH", "FTW", "WELS", "KNO", "FOR", "REIT", "NOW", "MODS", "HELP", "HIM", "TELL", "DLDO", "ETF", "EOY", "DCA", "TSP", "TO", "MY",
         "KYS", "FD", "TYS", "US", "USA", "IT", "ATH", "RIP", "BMW", "GDP", "MUST", "FOO", "FFF", "FFFF", "MAN", "OTM", "ITM", "SAM", "PLAY", "YOUR", "ARE", "FUK", "WEED", "MAST", "ADL", "GUNS",
         "OTM", "ATM", "ITM", "IMO", "LOL", "DOJ", "BE", "PR", "PC", "ICE", "OUT", "HERE", "ALL", "BAN", "HAD", "HAS", "ITS", "HOLD", "WEEK", "NOOB", "BTC", "SHIT", "METH", "JPOW", "FUD", "NEWS",
         "TYS", "ISIS", "PRAY", "PT", "FBI", "SEC", "GOD", "NOT", "POS", "COD", "FUCK", "TAX", "THIS", "WAS", "STD", "WAS", "HELP", "MOM", "PUT", "IRA", "FUND", "OMG", "NARC", "CIA", "BOSS",
@@ -195,8 +192,9 @@ def build_stock_symbol_dictionary_from_body(stock_symbol_dictionary, body):
         "GG", "ELON", "ROPE", "GUH", "HOLY", "GAP", "GANG", "LONG", "INTO", "MOON", "THE", "HIV", "BULL", "BEAR", "YTD", "DIP", "BUY", "TURN", "LEAP", "FYI", "SARS", "CRAP", "EOW", "EASY", "AMA", "TARP", "NY",
         "FDIC", "UFC", "LETS", "PUMP", "FAKE", "WHY", "TICKER", "TICKERS", "WUUU", "ESPN", "WON", "COCK", "YUGE", "ONLY", "FALL", "GSI", "ONE", "BABY", "BIG", "FAT", "GIVE", "FED", "WILL", "NEW", "PUTS", "EPS", "REK"
     ]
-
+    
     # Takes care of cases where stocks are mentioned like '$INTC, $AMD, $MSFT' etc.
+
     if '$' in body:
         starting_index = body.find('$') + 1
         asset_symbol = format_and_segment_asset_symbol_from_body(body, starting_index)
@@ -205,8 +203,9 @@ def build_stock_symbol_dictionary_from_body(stock_symbol_dictionary, body):
             try:
                     # If this stock has already been added to the dictionary, update the count, append the comment body
                     if asset_symbol in stock_symbol_dictionary:
-                        stock_symbol_dictionary[asset_symbol].total_mentions += 1
-                        stock_symbol_dictionary[asset_symbol].associated_sentences.append(body)
+                        if body not in stock_symbol_dictionary[asset_symbol].associated_sentences:
+                            stock_symbol_dictionary[asset_symbol].total_mentions += 1
+                            stock_symbol_dictionary[asset_symbol].associated_sentences.append(body)
                     # Else create and add the new Asset_Data object to the dictionary
                     else:
                         stock_symbol_dictionary[asset_symbol] = Asset_Data(asset_symbol)
@@ -221,11 +220,13 @@ def build_stock_symbol_dictionary_from_body(stock_symbol_dictionary, body):
     for count, current_word in enumerate(body_split_text_list):
         # All NASDAQ symbols are 4 to 5 letters and alphanumeric - 5 letter stock names are barely ever mentioned
         # All NYSE symbols are 1 to 3 letters and alphanumeric - Some popular 1 and 2 letter names like F, V, and MA, but people tend to mention them with a $ sign
+        
         if current_word.isupper() and len(current_word) >= 2 and (current_word.upper() not in blacklisted_word_list) and len(current_word) < 5 and current_word.isalpha():
             asset_symbol = current_word
             if asset_symbol in stock_symbol_dictionary:
-                stock_symbol_dictionary[asset_symbol].total_mentions += 1
-                stock_symbol_dictionary[asset_symbol].associated_sentences.append(body)
+                if body not in stock_symbol_dictionary[asset_symbol].associated_sentences:
+                    stock_symbol_dictionary[asset_symbol].total_mentions += 1
+                    stock_symbol_dictionary[asset_symbol].associated_sentences.append(body)
             else:
                 stock_symbol_dictionary[asset_symbol] = Asset_Data(asset_symbol)
                 stock_symbol_dictionary[asset_symbol].total_mentions = 1
@@ -250,7 +251,18 @@ def format_and_segment_asset_symbol_from_body(comment_body, starting_index):
         else:
             asset_symbol += current_character
             current_letter_count += 1
-    return asset_symbol.upper() # Return stock symbol (AMD, MSFT, SPY)
+    return asset_symbol.upper()  # Return stock symbol (AMD, MSFT, SPY)
+    
+def get_url(key, value, total_count):
+    mention = ("mentions", "mention")[value == 1]
+    if int(value / total_count * 100) == 0:
+        perc_mentions = "<1"
+    else:
+        perc_mentions = int(value / total_count * 100)
+    return "{0}:    {3}% {1}".format(key, value, mention, perc_mentions)
+
+def object_dictionary(input_object):
+    return input_object.__dict__
 
 # Class to store details of a particular asset
 # TODO: JSONify this
@@ -258,13 +270,13 @@ class Asset_Data:
     def __init__(self, stock_symbol):
         self.symbol = stock_symbol  # String - Stock Symbol - AMD/MSFT/SPY
         self.total_mentions = 0 # Integer - Total number of times the symbol was mentioned
-        self.associated_sentences = [] # List of all associated sentences for the symbol to be analyzed for sentiment
         self.positive_comment_count = 0 # Total number of positive sentences
         self.negative_comment_count = 0 # Total number of negative sentences
         self.bullish = 0 # Percent of bullish mentions
         self.bearish = 0  # Percent of bearish mentions
         self.neutral = 0 # # Percent of neutral mentions
         self.sentiment = 0  # 0 is neutral
+        self.associated_sentences = [] # List of all associated sentences for the symbol to be analyzed for sentiment
 
     def analyze_sentiment(self):
         # Instantiate a VADER instance
